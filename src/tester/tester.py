@@ -156,15 +156,14 @@ def cmd(cmd: list[str]):
 def test(path: str | Path | bytes | BinaryIO) -> tuple[int, int, bytes, bytes, bool]:
 	if isinstance(path, (str, Path)):
 		with open(path, 'rb') as f:
-			f = f.read()
+			s = structure.read(f)
 	elif isinstance(path, (bytes,)):
-		f = path
+		s = structure.read(BytesIO(path))
 	elif isinstance(path, BinaryIO):
-		f = path.read()
+		s = structure.read(path)
 	else:
 		# assume it's a file, otherwise it will throw
-		f = path.read() # pyright: ignore
-	s = structure.read(f)
+		s = structure.read(path)
 	ret, halted, argv, in_, out, err = run(s['argv'].value, s['stdin'].value) # pyright: ignore
 
 	failure = 0
@@ -230,5 +229,7 @@ def save(output: str | Path | BinaryIO, args: list[str], stdin: str | Path | byt
 		with open(output, 'wb') as f:
 			f.write(buffer.read())
 	elif isinstance(output, BinaryIO):
+		output.write(buffer.read())
+	else:
 		output.write(buffer.read())
 	return ret, halted, out, err
