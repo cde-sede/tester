@@ -151,7 +151,7 @@ def cmd(cmd: list[str]):
 			shell=True,
 		)
 
-def test(path: str):
+def test(path: str) -> tuple[int, int, bytes, bytes, bool]:
 	with open(path, 'rb') as f:
 		s = structure.read(f)
 		ret, halted, argv, in_, out, err = run(s['argv'].value, s['stdin'].value) # pyright: ignore
@@ -173,21 +173,23 @@ def test(path: str):
 		if not failure:
 			print("\033[32mSUCCESS\033[0m")
 
-def run(args: list[str], stdin: bytes):
+		return ret, halted, out, err, bool(failure)
+
+def run(args: list[str], stdin: bytes) -> tuple[int, int, list[str], bytes, bytes, bytes]:
 	process = cmd(args)
 	out, err = process.communicate(input=stdin)
 
 	if process.returncode is None:
 		process.kill()
-		halted = True
+		halted = 1
 		ret = 0
 	else:
 		ret = process.returncode
-		halted = False
+		halted = 0
 
 	return process.returncode, halted, args, stdin, out, err
 
-def save(output: str, args: list[str], stdin_path):
+def save(output: str, args: list[str], stdin_path) -> tuple[int, int, bytes, bytes]:
 	if stdin_path:
 		with open(stdin_path, 'rb') as f:
 			stdin = f.read()
@@ -204,3 +206,4 @@ def save(output: str, args: list[str], stdin_path):
 			.add_parameter('b', 'stdout', out)
 			.add_parameter('b', 'stderr', err)
 		).write(f)
+	return ret, halted, out, err
