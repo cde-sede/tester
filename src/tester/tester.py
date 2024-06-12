@@ -153,29 +153,40 @@ def cmd(cmd: list[str]):
 			shell=True,
 		)
 
-def test(path: str) -> tuple[int, int, bytes, bytes, bool]:
-	with open(path, 'rb') as f:
-		s = structure.read(f)
-		ret, halted, argv, in_, out, err = run(s['argv'].value, s['stdin'].value) # pyright: ignore
+def test(path: str | Path | bytes | BinaryIO) -> tuple[int, int, bytes, bytes, bool]:
+	if path:
+		if isinstance(path, (str, Path)):
+			with open(path, 'rb') as f:
+				f = f.read()
+		elif isinstance(path, (bytes,)):
+			f = path
+		elif isinstance(path, BinaryIO):
+			f = path.read()
+		else:
+			raise TypeError
+	else:
+		raise TypeError
+	s = structure.read(f)
+	ret, halted, argv, in_, out, err = run(s['argv'].value, s['stdin'].value) # pyright: ignore
 
-		failure = 0
-		if ret != s['ret'].value:
-			print(f"\033[31mRETURNCODE\033[0m {ret} != {s['ret'].value}")
-			failure = 1
-		if halted != s['halted'].value:
-			print(f"\033[31mHALTED\033[0m {halted} != {s['halted'].value}")
-			failure = 1
-		if out != s['stdout'].value:
-			print(f"\033[31mSTDOUT\033[0m ({out.decode('utf8')}) != ({s['stdout'].value.decode('utf8')})") # pyright: ignore
+	failure = 0
+	if ret != s['ret'].value:
+		print(f"\033[31mRETURNCODE\033[0m {ret} != {s['ret'].value}")
+		failure = 1
+	if halted != s['halted'].value:
+		print(f"\033[31mHALTED\033[0m {halted} != {s['halted'].value}")
+		failure = 1
+	if out != s['stdout'].value:
+		print(f"\033[31mSTDOUT\033[0m ({out.decode('utf8')}) != ({s['stdout'].value.decode('utf8')})") # pyright: ignore
 
-			failure = 1
-		if err != s['stderr'].value:
-			print(f"\033[31mSTDOUT\033[0m ({err.decode('utf8')}) != ({s['stderr'].value.decode('utf8')})") # pyright: ignore
-			failure = 1
-		if not failure:
-			print("\033[32mSUCCESS\033[0m")
+		failure = 1
+	if err != s['stderr'].value:
+		print(f"\033[31mSTDOUT\033[0m ({err.decode('utf8')}) != ({s['stderr'].value.decode('utf8')})") # pyright: ignore
+		failure = 1
+	if not failure:
+		print("\033[32mSUCCESS\033[0m")
 
-		return ret, halted, out, err, bool(failure)
+	return ret, halted, out, err, bool(failure)
 
 def run(args: list[str], stdin: bytes) -> tuple[int, int, list[str], bytes, bytes, bytes]:
 	process = cmd(args)
