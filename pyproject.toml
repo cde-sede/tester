@@ -1,0 +1,35 @@
+[build-system]
+requires = [
+  "setuptools>=64",
+  "wheel",
+]
+
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = true
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = true
+
+[project]
+name = "tester"
+dynamic = ["version"]
+description = "A (badly written) python tester and recorder for shell commands"
+authors = [{ name = "cde-sede" }, { email = "clement.desede@gmail.com" }]
+maintainers = [{ name = "cde-sede" }, { email = "clement.desede@gmail.com" }]
+readme = "README.md"
+license = { file = "LICENSE.txt" }
+requires-python = ">=3.7"
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python",
+]
+
+[project.urls]
+Homepage = "https://github.com/cde-sede/tester"
+documentation = "https://github.com/cde-sede/tester"
+repository = "https://github.com/cde-sede/tester"
+changelog = "https://github.com/cde-sede/tester/blob/main/CHANGELOG.md"
