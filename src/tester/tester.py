@@ -154,18 +154,16 @@ def cmd(cmd: list[str]):
 		)
 
 def test(path: str | Path | bytes | BinaryIO) -> tuple[int, int, bytes, bytes, bool]:
-	if path:
-		if isinstance(path, (str, Path)):
-			with open(path, 'rb') as f:
-				f = f.read()
-		elif isinstance(path, (bytes,)):
-			f = path
-		elif isinstance(path, BinaryIO):
-			f = path.read()
-		else:
-			raise TypeError
+	if isinstance(path, (str, Path)):
+		with open(path, 'rb') as f:
+			f = f.read()
+	elif isinstance(path, (bytes,)):
+		f = path
+	elif isinstance(path, BinaryIO):
+		f = path.read()
 	else:
-		raise TypeError
+		# assume it's a file, otherwise it will throw
+		f = path.read() # pyright: ignore
 	s = structure.read(f)
 	ret, halted, argv, in_, out, err = run(s['argv'].value, s['stdin'].value) # pyright: ignore
 
@@ -181,7 +179,7 @@ def test(path: str | Path | bytes | BinaryIO) -> tuple[int, int, bytes, bytes, b
 
 		failure = 1
 	if err != s['stderr'].value:
-		print(f"\033[31mSTDOUT\033[0m ({err.decode('utf8')}) != ({s['stderr'].value.decode('utf8')})") # pyright: ignore
+		print(f"\033[31mSTDERR\033[0m ({err.decode('utf8')}) != ({s['stderr'].value.decode('utf8')})") # pyright: ignore
 		failure = 1
 	if not failure:
 		print("\033[32mSUCCESS\033[0m")
@@ -212,7 +210,8 @@ def save(output: str | Path | BinaryIO, args: list[str], stdin: str | Path | byt
 		elif isinstance(stdin, BinaryIO):
 			in_ = stdin.read()
 		else:
-			raise TypeError
+			# assume it's a file, otherwise it will throw
+			in_ = stdin.read() # pyright: ignore
 	else:
 		in_ = b''
 	ret, halted, argv, in_, out, err = run(args, in_)
