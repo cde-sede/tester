@@ -1,6 +1,8 @@
 from pynary import IOobject, IOStream, types, cast_object
+from io import BytesIO
 from dataclasses import dataclass, field
-from typing import TypeAlias
+from typing import TypeAlias, BinaryIO
+from pathlib import Path
 import subprocess
 
 @IOobject
@@ -189,21 +191,34 @@ def run(args: list[str], stdin: bytes) -> tuple[int, int, list[str], bytes, byte
 
 	return process.returncode, halted, args, stdin, out, err
 
-def save(output: str, args: list[str], stdin_path) -> tuple[int, int, bytes, bytes]:
-	if stdin_path:
-		with open(stdin_path, 'rb') as f:
-			stdin = f.read()
+def save(output: str | Path | BinaryIO, args: list[str], stdin: str | Path | bytes | BinaryIO) -> tuple[int, int, bytes, bytes]:
+	if stdin:
+		if isinstance(stdin, (str, Path)):
+			with open(stdin, 'rb') as f:
+				in_ = f.read()
+		elif isinstance(stdin, (bytes,)):
+			in_ = stdin
+		elif isinstance(stdin, BinaryIO):
+			in_ = stdin.read()
+		else:
+			raise TypeError
 	else:
-		stdin = b''
-	ret, halted, argv, in_, out, err = run(args, stdin)
+		in_ = b''
+	ret, halted, argv, in_, out, err = run(args, in_)
 
-	with open(output, 'wb') as f:
-		s = (structure()
-			.add_parameter('i', 'ret', ret)
-			.add_parameter('i', 'halted', halted)
-			.add_parameter('l', 'argv', args)
-			.add_parameter('b', 'stdin', in_)
-			.add_parameter('b', 'stdout', out)
-			.add_parameter('b', 'stderr', err)
-		).write(f)
+	buffer = BytesIO()
+	s = (structure()
+		.add_parameter('i', 'ret', ret)
+		.add_parameter('i', 'halted', halted)
+		.add_parameter('l', 'argv', args)
+		.add_parameter('b', 'stdin', in_)
+		.add_parameter('b', 'stdout', out)
+		.add_parameter('b', 'stderr', err)
+	).write(buffer)
+	buffer.seek(0)
+	if isinstance(output, (str, Path)):
+		with open(output, 'wb') as f:
+			f.write(buffer.read())
+	elif isinstance(output, BinaryIO):
+		output.write(buffer.read())
 	return ret, halted, out, err
