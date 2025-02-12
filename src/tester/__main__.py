@@ -11,7 +11,7 @@ if __name__ == '__main__':
 
 	swrite = sub.add_parser("save")
 	swrite.add_argument('-o', '--output', required=True)
-	swrite.add_argument('-a', '--args', required=True, nargs='*')
+	swrite.add_argument('-a', '--args', required=True, nargs='+', action="append")
 	swrite.add_argument('--stdin', default=None)
 
 	args = parser.parse_args()
@@ -20,4 +20,4 @@ if __name__ == '__main__':
 		test(args.source)
 
 	if args.instruction == 'save':
-		save(args.output, args.args, args.stdin)
+		save(args.output, sum(args.args, []), args.stdin)

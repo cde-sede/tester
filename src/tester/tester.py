@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import TypeAlias, BinaryIO
 from pathlib import Path
 import subprocess
+import sys
 
 @IOobject
 class Blob(IOStream):
@@ -144,13 +145,13 @@ class structure:
 		Field(io).write("E", '\0')
 		
 
-def cmd(cmd: list[str]):
+def cmd(cmd: list[str], shell=False):
 	print('[RUN]', cmd)
 	return subprocess.Popen(cmd,
 			stdin=subprocess.PIPE,
 			stdout=subprocess.PIPE,
 			stderr=subprocess.PIPE,
-			shell=True,
+			shell=shell,
 		)
 
 def test(path: str | Path | bytes | BinaryIO) -> tuple[int, int, bytes, bytes, bool]:
@@ -167,21 +168,21 @@ def test(path: str | Path | bytes | BinaryIO) -> tuple[int, int, bytes, bytes, b
 	ret, halted, argv, in_, out, err = run(s['argv'].value, s['stdin'].value) # pyright: ignore
 
 	failure = 0
+	isatty = (lambda s: s) if sys.stdout.isatty() else (lambda s: '')
 	if ret != s['ret'].value:
-		print(f"\033[31mRETURNCODE\033[0m {ret} != {s['ret'].value}")
+		print(isatty("\033[31m"), "RETURNCODE", isatty("\033[0m"), f" {ret} != {s['ret'].value}", sep='')
 		failure = 1
 	if halted != s['halted'].value:
-		print(f"\033[31mHALTED\033[0m {halted} != {s['halted'].value}")
+		print(isatty("\033[31m"), "HALTED", isatty("\033[0m"), f" {halted} != {s['halted'].value}", sep='')
 		failure = 1
 	if out != s['stdout'].value:
-		print(f"\033[31mSTDOUT\033[0m ({out.decode('utf8')}) != ({s['stdout'].value.decode('utf8')})") # pyright: ignore
-
+		print(isatty("\033[31m"), "STDOUT", isatty("\033[0m"), f" ({out.decode('utf8')}) != ({s['stdout'].value.decode('utf8')})", sep='') # pyright: ignore
 		failure = 1
 	if err != s['stderr'].value:
-		print(f"\033[31mSTDERR\033[0m ({err.decode('utf8')}) != ({s['stderr'].value.decode('utf8')})") # pyright: ignore
+		print(isatty("\033[31m"), "STDERR", isatty("\033[0m"), f" ({err.decode('utf8')}) != ({s['stderr'].value.decode('utf8')})", sep='') # pyright: ignore
 		failure = 1
 	if not failure:
-		print("\033[32mSUCCESS\033[0m")
+		print(isatty("\033[32m"), "SUCCESS", isatty("\033[0m"), sep='')
 
 	return ret, halted, out, err, bool(failure)
 
